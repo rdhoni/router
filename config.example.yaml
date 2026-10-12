@@ -29,8 +29,10 @@ remote-management:
   # Jangan matikan kontrol panel (tetap false agar Web UI aktif)
   disable-control-panel: false
 
-# Direktori penyimpanan kredensial dan sesi autentikasi akun AI
-auth-dir: "auths"
+# Direktori penyimpanan kredensial dan sesi autentikasi akun AI.
+# Gunakan "/etc/mbahrouter/auths" untuk instalasi standar VPS Linux,
+# atau "auths" jika menjalankan langsung di direktori kerja lokal.
+auth-dir: "/etc/mbahrouter/auths"
 
 # Daftar API Key untuk autentikasi client (Cursor, Claude Code, Cline, cURL, dll.)
 # Client mengirimkan key ini melalui header 'Authorization: Bearer <key>'

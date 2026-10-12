@@ -291,6 +291,18 @@ Cukup unduh binary rilis terbaru dari <a href="https://github.com/rdhoni/router/
 <pre><code>sudo systemctl restart mbahrouter</code></pre>
 </details>
 
+<details>
+<summary><b>4. Error "open /etc/mbahrouter/provider-credentials.db: permission denied"?</b></summary>
+Penyebab: Binary dijalankan oleh pengguna biasa (non-root) yang belum memiliki izin tulis ke direktori sistem <code>/etc/mbahrouter/</code>. MbahRouter memerlukan izin tulis untuk database konfigurasi dan data usage-keeper.
+<br><br>
+Solusi cepat (berikan kepemilikan folder ke user Anda):
+<pre><code>sudo chown -R $USER:$USER /etc/mbahrouter
+sudo chmod -R 775 /etc/mbahrouter</code></pre>
+Atau jalankan melalui systemd service (otomatis berjalan sebagai service daemon):
+<pre><code>sudo systemctl enable --now mbahrouter</code></pre>
+</details>
+
+
 ---
 
 ## 📄 Lisensi
