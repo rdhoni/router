@@ -238,6 +238,156 @@ sudo journalctl -u mbahrouter -f
 
 ---
 
+## 🌐 Setup Nginx Reverse Proxy & SSL Gratis (HTTPS)
+
+Jika Anda ingin mengakses MbahRouter menggunakan domain sendiri (contoh: `https://llm.domainanda.com`), disarankan menggunakan **Nginx** sebagai reverse proxy dan **Certbot** untuk sertifikat SSL gratis Let's Encrypt.
+
+Template konfigurasi siap pakai tersedia di file [nginx.example.conf](nginx.example.conf).
+
+### Keuntungan Menggunakan Nginx Reverse Proxy:
+* **Streaming AI Responsif (SSE)**: Respons realtime tanpa jeda dengan `proxy_buffering off`.
+* **Dukungan WebSocket**: Relay sesi interaktif dan OpenAI Codex berjalan lancar.
+* **Upload File Besar hingga 2GB**: Mendukung backup file auth dan upload media Telegram MTProto bot.
+* **Kompresi Gzip Terintegrasi**: Mengompresi bundle SPA Web UI dari ~3.9MB menjadi ~900KB.
+* **Anti-Cache Bundle SPA**: Header `Cache-Control: no-cache, must-revalidate` memastikan browser klien selalu memuat versi dashboard terbaru saat server di-update.
+
+---
+
+### Langkah 1: Install Nginx & Certbot
+```bash
+sudo apt update
+sudo apt install nginx certbot python3-certbot-nginx -y
+```
+
+---
+
+### Langkah 2: Pasang Konfigurasi WebSocket Map
+Buat file `/etc/nginx/conf.d/websocket.conf` agar Nginx dapat menangani koneksi WebSocket secara dinamis:
+```bash
+sudo tee /etc/nginx/conf.d/websocket.conf > /dev/null << 'EOF'
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+EOF
+```
+
+---
+
+### Langkah 3: Konfigurasi Virtual Host Nginx
+Buat file konfigurasi vhost untuk domain Anda, misalnya `/etc/nginx/sites-available/llm.domainanda.com`:
+```bash
+sudo nano /etc/nginx/sites-available/llm.domainanda.com
+```
+
+Salin konfigurasi berikut (sesuaikan `server_name` dan port proxy jika port MbahRouter Anda berbeda):
+```nginx
+server {
+    server_name llm.domainanda.com;
+
+    # Batas ukuran upload (2GB untuk backup & MTProto Telegram bot)
+    client_max_body_size 2048M;
+
+    # Kompresi Gzip untuk SPA bundle MbahRouter
+    gzip on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_types
+        text/plain
+        text/css
+        application/json
+        application/javascript
+        text/xml
+        application/xml
+        application/xml+rss
+        text/javascript
+        image/svg+xml;
+
+    location / {
+        # Arahkan ke port lokal MbahRouter (default: 8317 atau 14555)
+        proxy_pass http://127.0.0.1:8317;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+
+        # WAJIB: Matikan buffering agar SSE streaming AI realtime & SPA bundle utuh
+        proxy_buffering off;
+        proxy_request_buffering off;
+
+        proxy_connect_timeout 60s;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
+    # Pastikan browser selalu me-revalidasi SPA dashboard saat ada update rilis
+    location = / {
+        proxy_pass http://127.0.0.1:8317;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_buffering off;
+        add_header Cache-Control "no-cache, must-revalidate";
+    }
+
+    location = /index.html {
+        proxy_pass http://127.0.0.1:8317;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_buffering off;
+        add_header Cache-Control "no-cache, must-revalidate";
+    }
+
+    listen 80;
+}
+```
+
+---
+
+### Langkah 4: Aktifkan Vhost & Uji Konfigurasi
+```bash
+# Aktifkan konfigurasi
+sudo ln -s /etc/nginx/sites-available/llm.domainanda.com /etc/nginx/sites-enabled/
+
+# Uji sintaks Nginx
+sudo nginx -t
+
+# Muat ulang Nginx
+sudo systemctl reload nginx
+```
+
+---
+
+### Langkah 5: Pasang Sertifikat SSL Gratis (HTTPS)
+Gunakan Certbot untuk mengamankan domain secara otomatis dengan HTTPS:
+```bash
+sudo certbot --nginx -d llm.domainanda.com
+```
+Certbot akan memperbarui file vhost dengan sertifikat SSL dan mengalihkan HTTP (port 80) ke HTTPS (port 443) secara otomatis.
+
+> [!TIP]
+> **Pengguna Cloudflare (CDN Proxy / Awan Oranye)**:
+> 1. Atur mode SSL/TLS di dashboard Cloudflare ke **Full** atau **Full (strict)**.
+> 2. Pastikan fitur **WebSockets** aktif di menu *Network* Cloudflare.
+> 3. Jika menggunakan custom Page Rule / Cache Rule, disarankan menambahkan rule bypass cache untuk URL `/` dan `/index.html`.
+
+---
+
 ## 🛡️ Firewall & Keamanan VPS
 
 Pastikan port `8317` terbuka di firewall VPS Anda:
