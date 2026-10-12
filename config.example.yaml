@@ -1,0 +1,58 @@
+# ==============================================================================
+# MbahRouter - Configuration Template (config.yaml)
+# Repository: https://github.com/rdhoni/router
+# ==============================================================================
+
+# Server host/interface to bind to.
+# Gunakan "" untuk mendengarkan di semua interface (IPv4 + IPv6).
+# Gunakan "127.0.0.1" jika ingin membatasi akses hanya dari localhost/reverse proxy.
+host: ""
+
+# Port server HTTP / Web UI Management
+port: 8317
+
+# Pengaturan TLS / HTTPS (Opsional jika menggunakan reverse proxy Nginx/Caddy)
+tls:
+  enable: false
+  cert: ""
+  key: ""
+
+# Pengaturan Remote Management & Web UI Dashboard
+remote-management:
+  # Izinkan akses remote (dari luar localhost/VPS)
+  allow-remote: true
+
+  # Kunci rahasia untuk login ke Web Management Panel (/ dan /management)
+  # GANTI DENGAN KUNCI AMAN ANDA!
+  secret-key: "ganti-dengan-password-rahasia-anda"
+
+  # Jangan matikan kontrol panel (tetap false agar Web UI aktif)
+  disable-control-panel: false
+
+# Direktori penyimpanan kredensial dan sesi autentikasi akun AI
+auth-dir: "auths"
+
+# Daftar API Key untuk autentikasi client (Cursor, Claude Code, Cline, cURL, dll.)
+# Client mengirimkan key ini melalui header 'Authorization: Bearer <key>'
+api-keys:
+  - "sk-mbahrouter-admin-key"
+  - "sk-mbahrouter-team-key"
+
+# Mode Debug (set true jika ingin melihat detail log request)
+debug: false
+
+# ------------------------------------------------------------------------------
+# In-Process Token Savers (RTK, Caveman, Ponytail, Snip)
+# Mengompresi context dan memotong konsumsi token secara otomatis
+# ------------------------------------------------------------------------------
+# Token Saver bawaan otomatis aktif.
+# Untuk menonaktifkannya pada request tertentu, kirim header:
+# X-MbahRouter-Token-Saver: off
+
+# ------------------------------------------------------------------------------
+# Storage Backend (Opsional)
+# Default menggunakan penyimpanan lokal berbasis file (auth-dir).
+# Jika ingin menggunakan database PostgreSQL, atur environment variable:
+#   PGSTORE_ENABLED=true
+#   PGSTORE_DSN="postgres://user:password@localhost:5432/mbahrouter?sslmode=disable"
+# ------------------------------------------------------------------------------
